@@ -142,7 +142,7 @@ namespace GameFramework.Resource
 
             CancellationToken = InstanceRoot.gameObject.GetCancellationTokenOnDestroy();
 
-            IObjectPoolManager objectPoolManager = GameFrameworkEntry.GetModule<IObjectPoolManager>();
+            IObjectPoolManager objectPoolManager = GameFrameworkSystem.GetModule<IObjectPoolManager>();
             SetObjectPoolManager(objectPoolManager);
         }
 
@@ -253,10 +253,6 @@ namespace GameFramework.Resource
             Log.Info($"Init resource package version : {initializationOperation?.PackageVersion}");
 
             return initializationOperation;
-        }
-
-        internal override void Update(float elapseSeconds, float realElapseSeconds)
-        {
         }
 
         internal override void Shutdown()
@@ -585,6 +581,7 @@ namespace GameFramework.Resource
             AssetObject assetObject = m_AssetPool.Spawn(assetObjectKey);
             if (assetObject != null)
             {
+                await UniTask.Yield();
                 callback?.Invoke(assetObject.Target as T);
                 return;
             }
@@ -643,6 +640,7 @@ namespace GameFramework.Resource
             AssetObject assetObject = m_AssetPool.Spawn(assetObjectKey);
             if (assetObject != null)
             {
+                await UniTask.Yield();
                 return assetObject.Target as T;
             }
             
@@ -679,6 +677,7 @@ namespace GameFramework.Resource
             AssetObject assetObject = m_AssetPool.Spawn(assetObjectKey);
             if (assetObject != null)
             {
+                await UniTask.Yield();
                 return AssetsReference.Instantiate(assetObject.Target as GameObject, parent, this).gameObject;
             }
             
@@ -730,10 +729,13 @@ namespace GameFramework.Resource
             
             await TryWaitingLoading(assetObjectKey);
             
+            float duration = Time.time;
+            
             AssetObject assetObject = m_AssetPool.Spawn(assetObjectKey);
             if (assetObject != null)
             {
-                loadAssetCallbacks.LoadAssetSuccessCallback(location, assetObject.Target, 0, userData);
+                await UniTask.Yield();
+                loadAssetCallbacks.LoadAssetSuccessCallback(location, assetObject.Target, Time.time - duration, userData);
                 return;
             }
             
@@ -752,8 +754,6 @@ namespace GameFramework.Resource
 
                 throw new GameFrameworkException(errorMessage);
             }
-            
-            float duration = Time.time;
 
             AssetHandle handle = GetHandleAsync(location, assetType, packageName: packageName);
 
@@ -817,10 +817,13 @@ namespace GameFramework.Resource
             
             await TryWaitingLoading(assetObjectKey);
             
+            float duration = Time.time;
+            
             AssetObject assetObject = m_AssetPool.Spawn(assetObjectKey);
             if (assetObject != null)
             {
-                loadAssetCallbacks.LoadAssetSuccessCallback(location, assetObject.Target, 0, userData);
+                await UniTask.Yield();
+                loadAssetCallbacks.LoadAssetSuccessCallback(location, assetObject.Target, Time.time - duration, userData);
                 return;
             }
             
@@ -840,8 +843,6 @@ namespace GameFramework.Resource
                 throw new GameFrameworkException(errorMessage);
             }
             
-            float duration = Time.time;
-
             AssetHandle handle = GetHandleAsync(location, assetInfo.AssetType, packageName: packageName);
 
             if (loadAssetCallbacks.LoadAssetUpdateCallback != null)
